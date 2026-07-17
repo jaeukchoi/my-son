@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>펭귄 한글 놀이</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gaegu:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky1:#bfe9ff; --sky2:#eaf8ff;
+    --ocean:#12699e; --ocean-deep:#0c4a72;
+    --ink:#243044;
+    --orange:#ff9d3d; --orange-d:#f07d1a;
+    --good:#43cf7c; --good-d:#2fae63;
+    --star:#ffcf3f; --coral:#ff8a8a;
+    --ice:#ffffff; --ice-line:#cfeafc;
+    --pengu:#33384a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg,var(--sky1) 0%, var(--sky2) 55%, #dff3ff 100%);
+    overflow:hidden;
+    user-select:none;
+    touch-action:manipulation;
+  }
+  #app{height:100dvh; display:flex; flex-direction:column; position:relative;}
+
+  /* falling snow */
+  .snow{position:fixed; top:-10px; color:#fff; opacity:.85; pointer-events:none; z-index:1;
+        text-shadow:0 1px 2px rgba(120,180,220,.4); animation:fall linear infinite;}
+  @keyframes fall{0%{transform:translateY(-10px) rotate(0)} 100%{transform:translateY(105vh) rotate(360deg)}}
+
+  /* top bar */
+  header{position:relative; z-index:5; padding:10px 14px 4px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;}
+  .title{font-size:clamp(22px,6vw,34px); color:var(--ocean-deep); text-shadow:0 2px 0 #fff, 0 3px 6px rgba(18,105,158,.25); margin:0 auto;}
+  .stars{position:absolute; right:12px; top:10px; background:#fff; border:3px solid var(--star);
+         border-radius:999px; padding:4px 14px 4px 10px; font-size:clamp(18px,5vw,24px); color:var(--ocean-deep);
+         box-shadow:0 4px 0 rgba(255,180,40,.35); display:flex; align-items:center; gap:4px;}
+  .stars .big{font-size:1.25em; line-height:1;}
+
+  .modes{display:flex; gap:8px; justify-content:center; padding:2px 10px 6px; position:relative; z-index:5; flex-wrap:wrap;}
+  .chip{font-family:inherit; font-size:clamp(15px,4.2vw,19px); border:none; cursor:pointer;
+        background:#fff; color:var(--ocean); border-radius:999px; padding:8px 16px;
+        box-shadow:0 4px 0 rgba(18,105,158,.18); transition:transform .1s;}
+  .chip:active{transform:translateY(2px);}
+  .chip.on{background:var(--ocean); color:#fff; box-shadow:0 4px 0 var(--ocean-deep);}
+
+  /* stage */
+  .stage{flex:1; position:relative; z-index:4; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:4px 12px 0;}
+
+  .askrow{display:flex; align-items:center; gap:10px; margin-top:2px;}
+  .prompt{font-size:clamp(16px,4.6vw,22px); color:var(--ocean-deep);}
+  .sound-btn{width:56px; height:56px; border-radius:50%; border:none; cursor:pointer; background:#fff;
+             box-shadow:0 4px 0 rgba(18,105,158,.2); font-size:26px; transition:transform .1s;}
+  .sound-btn:active{transform:translateY(2px) scale(.96);}
+
+  /* penguin + sign */
+  .penwrap{position:relative; margin-top:2px; display:flex; flex-direction:column; align-items:center;}
+  .penguin{width:clamp(120px,34vw,190px); height:auto; transform-origin:bottom center;}
+  .penguin.idle{animation:waddle 1.8s ease-in-out infinite;}
+  .penguin.happy{animation:hop .55s ease;}
+  .penguin.sad{animation:shake .45s ease;}
+  @keyframes waddle{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+  @keyframes hop{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-38px) scale(1.06,.95) rotate(-8deg)}
+                 55%{transform:translateY(-38px) rotate(8deg)}100%{transform:translateY(0) scale(1)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px) rotate(-3deg)}75%{transform:translateX(10px) rotate(3deg)}}
+
+  .sign{position:absolute; top:-6px; left:50%; transform:translateX(-50%);
+        background:#fff; border:5px solid var(--orange); border-radius:24px;
+        min-width:120px; padding:6px 18px 10px; text-align:center;
+        box-shadow:0 8px 0 rgba(240,125,26,.25);}
+  .sign .target{font-family:'Jua',sans-serif; font-size:clamp(64px,20vw,120px); line-height:1; color:var(--ocean-deep);}
+  .sign:after{content:""; position:absolute; bottom:-16px; left:50%; transform:translateX(-50%);
+              border-left:12px solid transparent; border-right:12px solid transparent; border-top:16px solid var(--orange);}
+
+  /* ice floes with options */
+  .floes{display:flex; gap:clamp(10px,3.5vw,22px); justify-content:center; align-items:flex-end;
+         margin-top:auto; padding-bottom:18px; width:100%;}
+  .floe{position:relative; cursor:pointer; border:none; background:transparent; font-family:inherit;
+        display:flex; flex-direction:column; align-items:center; transition:transform .12s;}
+  .floe .cap{font-size:clamp(52px,15vw,88px); color:var(--ocean-deep); line-height:1;
+             background:#fff; border-radius:26px 26px 18px 18px; padding:6px clamp(14px,5vw,26px) 2px;
+             box-shadow:0 6px 0 var(--ice-line), 0 12px 18px rgba(18,105,158,.18); animation:bob 2.6s ease-in-out infinite;}
+  .floe:nth-child(2) .cap{animation-delay:.5s} .floe:nth-child(3) .cap{animation-delay:1s}
+  .floe .ice{width:clamp(78px,22vw,120px); height:16px; margin-top:-4px; border-radius:0 0 40% 40%;
+             background:linear-gradient(#e9f7ff,#b7e4fb); box-shadow:0 6px 10px rgba(18,105,158,.15);}
+  .floe:active{transform:translateY(3px) scale(.97);}
+  .floe.correct .cap{background:var(--good); color:#fff; box-shadow:0 6px 0 var(--good-d);}
+  .floe.wrong .cap{animation:no .4s ease;}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes no{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}60%{transform:translateX(8px)}}
+
+  /* reward popup */
+  .reward{position:fixed; inset:0; z-index:20; display:none; align-items:center; justify-content:center; pointer-events:none;}
+  .reward.show{display:flex;}
+  .reward .card{background:#fff; border:6px solid var(--good); border-radius:32px; padding:20px 30px;
+                text-align:center; box-shadow:0 16px 40px rgba(18,105,158,.3); animation:pop .4s ease;}
+  .reward .emoji{font-size:clamp(70px,22vw,120px); line-height:1;}
+  .reward .word{font-size:clamp(30px,9vw,54px); color:var(--ocean-deep); margin-top:6px;}
+  .reward .cheer{font-size:clamp(20px,6vw,30px); color:var(--good-d);}
+  @keyframes pop{0%{transform:scale(.4); opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1); opacity:1}}
+
+  /* milestone banner */
+  .banner{position:fixed; inset:0; z-index:30; display:none; align-items:center; justify-content:center;
+          background:rgba(18,105,158,.35); pointer-events:none;}
+  .banner.show{display:flex;}
+  .banner .b{background:linear-gradient(180deg,#fff,#eaf8ff); border:6px solid var(--star); border-radius:30px;
+             padding:26px 34px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.25); animation:pop .5s ease;}
+  .banner .b .t{font-size:clamp(30px,9vw,50px); color:var(--orange-d);}
+  .banner .b .s{font-size:clamp(40px,12vw,64px);}
+
+  /* confetti */
+  .confetti{position:fixed; top:-20px; z-index:25; font-size:26px; pointer-events:none; animation:confall linear forwards;}
+  @keyframes confall{0%{transform:translateY(-20px) rotate(0); opacity:1}100%{transform:translateY(105vh) rotate(720deg); opacity:.9}}
+
+  /* start overlay */
+  .start{position:fixed; inset:0; z-index:50; background:linear-gradient(180deg,#bfe9ff,#eaf8ff);
+         display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center; padding:20px;}
+  .start h1{font-size:clamp(34px,10vw,58px); color:var(--ocean-deep); margin:0; text-shadow:0 3px 0 #fff;}
+  .start p{font-size:clamp(16px,4.6vw,20px); color:var(--ocean); margin:2px 0 14px;}
+  .go{font-family:inherit; font-size:clamp(24px,7vw,34px); color:#fff; background:var(--orange);
+      border:none; border-radius:999px; padding:16px 40px; cursor:pointer; box-shadow:0 8px 0 var(--orange-d);
+      animation:breathe 1.4s ease-in-out infinite;}
+  .go:active{transform:translateY(3px); box-shadow:0 5px 0 var(--orange-d);}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+  .start .pg{width:150px; animation:waddle 1.8s ease-in-out infinite;}
+
+  @media (prefers-reduced-motion: reduce){
+    .snow,.penguin.idle,.floe .cap,.go,.start .pg{animation:none !important;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 class="title">펭귄 한글 놀이 🐧</h1>
+    <div class="stars"><span class="big">⭐</span><span id="starCount">0</span></div>
+  </header>
+
+  <div class="modes">
+    <button class="chip on" data-mode="consonant">자음 ㄱㄴㄷ</button>
+    <button class="chip" data-mode="vowel">모음 ㅏㅑㅓ</button>
+    <button class="chip" data-mode="all">섞기 🎲</button>
+  </div>
+
+  <div class="stage">
+    <div class="askrow">
+      <span class="prompt">같은 글자를 찾아줘!</span>
+      <button class="sound-btn" id="replay" title="다시 듣기">🔊</button>
+    </div>
+
+    <div class="penwrap">
+      <div class="sign"><div class="target" id="target">ㄱ</div></div>
+      <svg class="penguin idle" id="penguin" viewBox="0 0 200 240" aria-hidden="true">
+        <ellipse cx="100" cy="228" rx="55" ry="12" fill="#a9d9f2"/>
+        <path d="M100 40 C55 40 42 95 42 140 C42 200 68 224 100 224 C132 224 158 200 158 140 C158 95 145 40 100 40 Z" fill="#33384a"/>
+        <ellipse cx="100" cy="150" rx="42" ry="66" fill="#fff"/>
+        <path d="M60 90 C48 120 50 165 60 190 C50 175 40 140 44 108 Z" fill="#2a2e3d"/>
+        <path d="M140 90 C152 120 150 165 140 190 C150 175 160 140 156 108 Z" fill="#2a2e3d"/>
+        <circle cx="82" cy="112" r="15" fill="#fff"/><circle cx="118" cy="112" r="15" fill="#fff"/>
+        <circle cx="85" cy="115" r="7.5" fill="#25293a" id="eyeL"/><circle cx="115" cy="115" r="7.5" fill="#25293a" id="eyeR"/>
+        <circle cx="88" cy="112" r="2.4" fill="#fff"/><circle cx="118" cy="112" r="2.4" fill="#fff"/>
+        <circle cx="70" cy="132" r="8" fill="#ffb3c1" opacity=".8"/><circle cx="130" cy="132" r="8" fill="#ffb3c1" opacity=".8"/>
+        <path d="M88 128 L112 128 L100 144 Z" fill="#ff9d3d"/>
+        <path d="M78 222 C70 234 58 236 66 224 Z M122 222 C130 234 142 236 134 224 Z" fill="#ff9d3d"/>
+        <ellipse cx="80" cy="230" rx="16" ry="8" fill="#ff9d3d"/><ellipse cx="120" cy="230" rx="16" ry="8" fill="#ff9d3d"/>
+      </svg>
+    </div>
+
+    <div class="floes" id="floes"></div>
+  </div>
+
+  <div class="reward" id="reward"><div class="card">
+    <div class="emoji" id="rEmoji">🎉</div>
+    <div class="word" id="rWord"></div>
+    <div class="cheer" id="rCheer">잘했어!</div>
+  </div></div>
+
+  <div class="banner" id="banner"><div class="b">
+    <div class="s">⭐⭐⭐</div><div class="t" id="bText">멋져요!</div>
+  </div></div>
+</div>
+
+<div class="start" id="startScreen">
+  <svg class="pg" viewBox="0 0 200 240" aria-hidden="true">
+    <path d="M100 40 C55 40 42 95 42 140 C42 200 68 224 100 224 C132 224 158 200 158 140 C158 95 145 40 100 40 Z" fill="#33384a"/>
+    <ellipse cx="100" cy="150" rx="42" ry="66" fill="#fff"/>
+    <circle cx="82" cy="112" r="15" fill="#fff"/><circle cx="118" cy="112" r="15" fill="#fff"/>
+    <circle cx="85" cy="115" r="7.5" fill="#25293a"/><circle cx="115" cy="115" r="7.5" fill="#25293a"/>
+    <circle cx="70" cy="132" r="8" fill="#ffb3c1" opacity=".8"/><circle cx="130" cy="132" r="8" fill="#ffb3c1" opacity=".8"/>
+    <path d="M88 128 L112 128 L100 144 Z" fill="#ff9d3d"/>
+  </svg>
+  <h1>펭귄 한글 놀이</h1>
+  <p>펭귄이 들려주는 글자를 찾아봐요!</p>
+  <button class="go" id="goBtn">시작하기 🐧</button>
+</div>
+
+<script>
+const CONSONANTS=[
+  {ch:'ㄱ',name:'기역',words:[['기린','🦒'],['고양이','🐱'],['곰','🐻'],['강아지','🐶'],['개구리','🐸']]},
+  {ch:'ㄴ',name:'니은',words:[['나비','🦋'],['낙타','🐫'],['늑대','🐺']]},
+  {ch:'ㄷ',name:'디귿',words:[['다람쥐','🐿️'],['돼지','🐷'],['닭','🐔'],['도마뱀','🦎']]},
+  {ch:'ㄹ',name:'리을',words:[['라마','🦙'],['랍스터','🦞']]},
+  {ch:'ㅁ',name:'미음',words:[['말','🐴'],['물고기','🐟'],['문어','🐙'],['무당벌레','🐞']]},
+  {ch:'ㅂ',name:'비읍',words:[['뱀','🐍'],['벌','🐝'],['박쥐','🦇']]},
+  {ch:'ㅅ',name:'시옷',words:[['사자','🦁'],['사슴','🦌'],['상어','🦈'],['새','🐦']]},
+  {ch:'ㅇ',name:'이응',words:[['오리','🦆'],['원숭이','🐵'],['얼룩말','🦓'],['앵무새','🦜']]},
+  {ch:'ㅈ',name:'지읒',words:[['쥐','🐭'],['젖소','🐄'],['잠자리','🪰']]},
+  {ch:'ㅊ',name:'치읓',words:[['치타','🐆'],['참새','🐦']]},
+  {ch:'ㅋ',name:'키읔',words:[['코끼리','🐘'],['코알라','🐨']]},
+  {ch:'ㅌ',name:'티읕',words:[['토끼','🐰'],['타조','🦤']]},
+  {ch:'ㅍ',name:'피읖',words:[['펭귄','🐧'],['판다','🐼']]},
+  {ch:'ㅎ',name:'히읗',words:[['하마','🦛'],['호랑이','🐯'],['햄스터','🐹']]},
+];
+const VOWELS=[
+  {ch:'ㅏ',name:'아',words:[['악어','🐊'],['앵무새','🦜']]},
+  {ch:'ㅑ',name:'야',words:[['양','🐑']]},
+  {ch:'ㅓ',name:'어',words:[['얼룩말','🦓']]},
+  {ch:'ㅕ',name:'여',words:[['여우','🦊']]},
+  {ch:'ㅗ',name:'오',words:[['오리','🦆'],['올빼미','🦉']]},
+  {ch:'ㅛ',name:'요',words:[['용','🐉']]},
+  {ch:'ㅜ',name:'우',words:[['우렁이','🐌']]},
+  {ch:'ㅠ',name:'유',words:[['유니콘','🦄']]},
+  {ch:'ㅡ',name:'으',words:[]},
+  {ch:'ㅣ',name:'이',words:[['이구아나','🦎']]},
+];
+const CHEERS=['잘했어!','최고야!','멋져요!','대단해!','참 잘했어요!','와, 맞았어!'];
+
+let mode='consonant', pool=CONSONANTS.slice(), current=null, stars=0, locked=false;
+
+const $=id=>document.getElementById(id);
+const shuffle=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
+const pick=(arr,n)=>shuffle(arr).slice(0,n);
+
+/* ---------- audio ---------- */
+let actx=null, koVoice=null;
+function initAudio(){
+  try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+       if(actx.state==='suspended') actx.resume(); }catch(e){}
+}
+function loadVoice(){
+  if(!('speechSynthesis' in window)) return;
+  const vs=speechSynthesis.getVoices();
+  koVoice=vs.find(v=>v.lang&&v.lang.toLowerCase().startsWith('ko'))||null;
+}
+if('speechSynthesis' in window){ loadVoice(); speechSynthesis.onvoiceschanged=loadVoice; }
+function speak(text){
+  if(!text||!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='ko-KR'; u.rate=.82; u.pitch=1.2; if(koVoice)u.voice=koVoice;
+  speechSynthesis.speak(u);
+}
+function chime(good){
+  if(!actx) return;
+  const now=actx.currentTime;
+  const notes=good?[523.25,659.25,783.99,1046.5]:[392,294];
+  notes.forEach((f,i)=>{
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type=good?'triangle':'sine'; o.frequency.value=f;
+    o.connect(g); g.connect(actx.destination);
+    const t=now+i*(good?.08:.14);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(.22,t+.02);
+    g.gain.exponentialRampToValueAtTime(.001,t+.3);
+    o.start(t); o.stop(t+.32);
+  });
+}
+
+/* ---------- round ---------- */
+function newRound(){
+  locked=false;
+  current=pick(pool,1)[0];
+  $('target').textContent=current.ch;
+  const distract=pick(pool.filter(x=>x.ch!==current.ch),2);
+  const opts=shuffle([current,...distract]);
+  const box=$('floes'); box.innerHTML='';
+  opts.forEach(o=>{
+    const b=document.createElement('button');
+    b.className='floe';
+    b.innerHTML=`<span class="cap">${o.ch}</span><span class="ice"></span>`;
+    b.onclick=()=>choose(o,b);
+    box.appendChild(b);
+  });
+  setPeng('idle');
+  setTimeout(()=>speak(current.name),300);
+}
+
+function choose(o,btn){
+  if(locked) return;
+  if(o.ch===current.ch){
+    locked=true;
+    btn.classList.add('correct');
+    chime(true);
+    setPeng('happy');
+    burst();
+    stars++; $('starCount').textContent=stars;
+    speak(current.name);
+    const chosen = current.words.length ? current.words[Math.floor(Math.random()*current.words.length)] : null;
+    showReward(current, chosen);
+    setTimeout(()=>{
+      hideReward();
+      if(stars>0 && stars%5===0){ milestone(); }
+      else newRound();
+    }, chosen? 1900:1500);
+  }else{
+    btn.classList.add('wrong');
+    chime(false);
+    setPeng('sad');
+    speak('다시 해 볼까?');
+    setTimeout(()=>btn.classList.remove('wrong'),450);
+  }
+}
+
+function showReward(o, chosen){
+  $('rEmoji').textContent = chosen ? chosen[1] : '🎉';
+  $('rWord').textContent = chosen ? `${o.ch} · ${chosen[0]}` : o.name;
+  $('rCheer').textContent = CHEERS[Math.floor(Math.random()*CHEERS.length)];
+  $('reward').classList.add('show');
+  if(chosen) setTimeout(()=>speak(chosen[0]),650);
+}
+function hideReward(){ $('reward').classList.remove('show'); }
+
+function milestone(){
+  $('bText').textContent=`별 ${stars}개! 최고예요!`;
+  $('banner').classList.add('show');
+  chime(true); burst(40); speak(`별 ${stars}개, 정말 잘했어요!`);
+  setTimeout(()=>{ $('banner').classList.remove('show'); newRound(); },2200);
+}
+
+/* ---------- effects ---------- */
+function setPeng(state){
+  const p=$('penguin');
+  p.className='penguin '+state;
+  if(state!=='idle') setTimeout(()=>{ p.className='penguin idle'; },650);
+}
+const CONF=['🎉','⭐','❄️','🐧','💙','🎊','✨'];
+function burst(n=22){
+  for(let i=0;i<n;i++){
+    const s=document.createElement('div');
+    s.className='confetti'; s.textContent=CONF[Math.floor(Math.random()*CONF.length)];
+    s.style.left=Math.random()*100+'vw';
+    s.style.fontSize=(18+Math.random()*22)+'px';
+    s.style.animationDuration=(1.6+Math.random()*1.4)+'s';
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),3200);
+  }
+}
+/* ambient snow */
+function makeSnow(){
+  const flakes=['❄','❅','•','∗'];
+  for(let i=0;i<26;i++){
+    const s=document.createElement('div');
+    s.className='snow'; s.textContent=flakes[Math.floor(Math.random()*flakes.length)];
+    s.style.left=Math.random()*100+'vw';
+    s.style.fontSize=(8+Math.random()*16)+'px';
+    s.style.animationDuration=(6+Math.random()*8)+'s';
+    s.style.animationDelay=(-Math.random()*10)+'s';
+    document.body.appendChild(s);
+  }
+}
+
+/* ---------- controls ---------- */
+document.querySelectorAll('.chip').forEach(c=>{
+  c.onclick=()=>{
+    document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');
+    mode=c.dataset.mode;
+    pool = mode==='consonant'?CONSONANTS.slice() : mode==='vowel'?VOWELS.slice() : CONSONANTS.concat(VOWELS);
+    newRound();
+  };
+});
+$('replay').onclick=()=>{ initAudio(); if(current) speak(current.name); };
+
+$('goBtn').onclick=()=>{
+  initAudio(); loadVoice();
+  speak('펭귄 한글 놀이 시작!');
+  $('startScreen').style.display='none';
+  makeSnow();
+  newRound();
+};
+</script>
+</body>
+</html>
